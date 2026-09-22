@@ -1,0 +1,7 @@
+# dsh-llm-ctl bundle patch: one insert row for the host half.
+# The host half owns the llm/stream admission queue and the agent/request-error
+# standalone recovery; the browser half ships through exports["./client"] and is
+# discovered by the package.json dsh.client declaration.
+- insert:
+    - id: llm-ctl
+      name: 'dsh-llm-ctl'

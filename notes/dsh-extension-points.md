@@ -1,4 +1,4 @@
-# DSH 界面扩展点调研（dsh-llm-ctl 视角）
+# DSH 界面扩展点调研（@leaves615/dsh-llm-ctl 视角）
 
 方法：只认一手来源——DSH 官方包源码／类型定义、package.json 的 dsh.* 声明、
 cordis.patch.yml 语义、本仓库真实用法。每个结论后注明来源文件路径。
@@ -242,11 +242,11 @@ llm remote 方法全集见 D/dsh-llm/lib/typert.remote-client.d.ts:10-16。写�
 
 - 根是空数组（cordis.yml 头注释：composed as patches: each bundle in package.json's dsh.profile.bundles, then cordis.patch.yml, then any --patch overlays. Edit cordis.patch.yml, not this file）。
 - 顺序：web profile package.json 的 dsh.profile.bundles（dsh-base → dsh-web-app → 第三方／本仓库共 14 项，其中
-  dsh-llm-ctl 以 link: 本地路径接入）→ 各包 dsh.bundle.patch（如 D/dsh-base/package.json、D/dsh-web-app/package.json 的 dsh.bundle.patch=./cordis.patch.yml，
+  @leaves615/dsh-llm-ctl 以 link: 本地路径接入）→ 各包 dsh.bundle.patch（如 D/dsh-base/package.json、D/dsh-web-app/package.json 的 dsh.bundle.patch=./cordis.patch.yml，
   base 包自述“substance is cordis.patch.yml”——D/dsh-base/lib/types/index.d.ts）→ 本 profile cordis.patch.yml（MCP 两例）→ --patch overlay。
 - 语义（D/dsh-base/cordis.patch.yml 头注释）：每 bundle 一次 insert，后层按 id 覆盖整行（whole-config replace，非合并，
   故某行配置分 mode 就必须每 mode bundle 重述完整版）；行序无加载语义（激活是 service-availability 驱动）；同 id 最后写入获胜。
-- 本仓库 host 半部只用一行 insert（W/cordis.patch.yml:5-7：id: llm-ctl, name: dsh-llm-ctl——config 默认即够用）；
+- 本仓库 host 半部只用一行 insert（W/cordis.patch.yml:5-7：id: llm-ctl, name: @leaves615/dsh-llm-ctl——config 默认即够用）；
   注释明示浏览器半部经 exports[./client]＋dsh.client 声明被发现（C1）。
 
 ## 5. 官方扩展点 vs DOM hack（X1）对照
@@ -258,7 +258,7 @@ llm remote 方法全集见 D/dsh-llm/lib/typert.remote-client.d.ts:10-16。写�
 | 脆弱点 | 覆盖行整替、路由重名抛错等均为 loud 失败 | Silent 失败为主：选择器失效＝过滤无声消失；label 改名／role 重构＝整功能丢失；与外来搜索插件（dsh-model-search-plugin）同菜单抢 display 控制权，需 hide-only＋data-marker 妥协（W/src/menu-visibility.ts:1-12）；旧 banner 曾用 z-index: 2147483000＋fixed 定位硬浮，现已迁入 conversation.composer.dock 官方槽（W/src/queue-dock.ts 纯视图，W/src/client-plugin.ts 以 order 1000 注册居末，idle 返回 null） |
 | 出路 | 若官方日后开出模型菜单过滤 API，第一时间迁移；此前把选择器收敛在 menu-filter.ts 一处即是正确止损 | 同左 |
 
-## 6. 与 dsh-llm-ctl 的对应关系
+## 6. 与 @leaves615/dsh-llm-ctl 的对应关系
 
 | 本仓库用法 | 扩展点编号 | 状态 |
 |------------|-----------|------|

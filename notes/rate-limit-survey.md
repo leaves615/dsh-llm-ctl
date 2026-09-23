@@ -1,6 +1,6 @@
 # Rate-limit 调研·主会话汇总（DSH 本地源码核实 + vendor 报告交叉）
 
-> 完整 vendor 对照表（13 家，一手核实）见 **vendor-rate-limit-report.md**；本文件只保留 DSH 本地事实与对 dsh-llm-ctl 的落地结论。
+> 完整 vendor 对照表（13 家，一手核实）见 **vendor-rate-limit-report.md**；本文件只保留 DSH 本地事实与对 @leaves615/dsh-llm-ctl 的落地结论。
 
 ## 1. DSH 现状（本地源码核实，@deepseek-ai/* 0.1.2-rc.1）
 

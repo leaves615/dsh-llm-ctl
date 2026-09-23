@@ -1,4 +1,4 @@
-# dsh-llm-ctl
+# @leaves615/dsh-llm-ctl
 
 给 DSH 加个门卫：模型调用先排队再放行，模型菜单把不用的彻底藏掉。
 
@@ -38,7 +38,7 @@ dsh web                                                   # 重启加载
 
 ```yaml
 - id: llm-ctl
-  name: 'dsh-llm-ctl'
+  name: '@leaves615/dsh-llm-ctl'
   config:
     queue:
       # 每个 provider 几个并发。不写 default 就是全不限流，0 也是不限流。

@@ -1,4 +1,4 @@
-# dsh-llm-ctl PRD — LLM 调用管制插件（排队 / 过滤 / 开关）
+# @leaves615/dsh-llm-ctl PRD — LLM 调用管制插件（排队 / 过滤 / 开关）
 
 > 状态：草案 v0.5（工程参数全部拍板，无遗留开放问题，可进入 M1）| 覆盖 profile：`web` | 形态：Cordis host 插件 + Web client 插件
 > 对标现状：`dsh-llm` 单次尝试无排队；`dsh-llm-retry` 只在 `agent/request-error` 边界重试；`dsh-model-search-plugin` 是纯 DOM 搜索（无服务端目录过滤、无隐藏开关）。
@@ -28,7 +28,7 @@
 - US1：作为重度用户，我触发 429 时看到“排队中 #3，预计 ~12s”而不是整轮报错，我可以取消等待。
 - US2：作为免费线路用户，我把 `provider.baseURL` 不稳的 10 个测试模型设为隐藏，模型弹窗清爽且设置页可一键恢复。
 - US3：作为管理员，我为团队 profile 预置 `hiddenPatterns: ["*-test-*"]`，新人开箱即用，还能自己再隐藏。
-- US4：作为现有 `dsh-model-search-plugin` 用户，装上 `dsh-llm-ctl` 后搜索框仍可用，不打架、不出双搜索框。
+- US4：作为现有 `dsh-model-search-plugin` 用户，装上 `@leaves615/dsh-llm-ctl` 后搜索框仍可用，不打架、不出双搜索框。
 
 ## 4. 功能需求
 
@@ -80,7 +80,7 @@
 ## 6. 配置（初稿）
 
 ```yaml
-- name: 'dsh-llm-ctl'
+- name: '@leaves615/dsh-llm-ctl'
   config:
     queue:
       perProviderConcurrency: { zen-free: 1 }  # 无 default 即不限制；0 = 不限制
@@ -143,7 +143,7 @@ src/
 ```mermaid
 sequenceDiagram
     participant Caller as 调用方(loop/后台任务)
-    participant Ctl as dsh-llm-ctl/queue
+    participant Ctl as llm-ctl/queue
     participant LLM as llm/stream→adapters
     participant Retry as dsh-llm-retry
     participant UI as Web UI
@@ -202,7 +202,7 @@ sequenceDiagram
 
 ## 12. 实施状态（M1–M3 已完成，真实 GUI 验证通过）
 
-代码在工作区根目录，包名 `dsh-llm-ctl`，`npm run verify` 全绿（typecheck + build + 41 项测试 + 真实 loader 冒烟启动）。
+代码在工作区根目录，包名 `@leaves615/dsh-llm-ctl`，`npm run verify` 全绿（typecheck + build + 41 项测试 + 真实 loader 冒烟启动）。
 
 | 文件 | 职责 |
 |---|---|

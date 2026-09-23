@@ -1,4 +1,4 @@
-# 主流 LLM API Rate Limit 形态调研（dsh-llm-ctl 排队设计依据）
+# 主流 LLM API Rate Limit 形态调研（@leaves615/dsh-llm-ctl 排队设计依据）
 
 > 后台调研 agent 一手核实报告（2026-07，仅官方文档 / botocore 规范 / 官方 SDK 源码；[未能核实] = 站点不可达，未采信二手转述）。主会话交叉核对记录见 rate-limit-survey.md。
 
@@ -27,7 +27,7 @@
 - **SDK 对 Retry-After 的解析顺序（openai-python 与 anthropic-python 同构，_base_client.py）**：retry-after-ms（毫秒）→ retry-after（秒，容忍浮点）→ retry-after 作 HTTP-date 解析；OpenAI SDK 超过上限（默认 60s）则放弃重试。来源：https://github.com/openai/openai-python/blob/main/src/openai/_base_client.py 、https://github.com/anthropics/anthropic-sdk-python/blob/main/src/anthropic/_base_client.py 、https://github.com/anthropics/anthropic-sdk-typescript/blob/main/src/client.ts（另含 x-should-retry 头处理）。
 - 其余来源（正文均已核对）：OpenAI https://platform.openai.com/docs/guides/rate-limits ；Anthropic https://docs.anthropic.com/en/api/rate-limits 与 /en/api/errors ；DeepSeek https://api-docs.deepseek.com/quick_start/rate_limit 、/quick_start/error_codes ；Gemini https://ai.google.dev/gemini-api/docs/rate-limits 、/gemini-api/docs/troubleshooting ；OpenRouter https://openrouter.ai/docs/api-reference/limits ；SiliconFlow https://docs.siliconflow.cn/cn/api-reference/chat-completions/chat-completions 、/docs/userguide/faqs/rate-limit-and-upgradation ；Ark https://www.volcengine.com/docs/82379/1848593 ；百炼 https://help.aliyun.com/zh/model-studio/rate-limit ；Azure https://learn.microsoft.com/en-us/azure/foundry/openai/quotas-limits 、/en-us/azure/foundry/openai/how-to/quota ；Groq https://console.groq.com/docs/rate-limits （本环境 403，经 web.archive.org 2026-09-05 快照核对全文）；Together https://docs.together.ai/docs/rate-limits 。
 
-## 三、dsh-llm-ctl 归一化建议
+## 三、@leaves615/dsh-llm-ctl 归一化建议
 
 **1) 解析优先级（高→低）**
 1. retry-after-ms（Azure，毫秒）——最精确；

@@ -1,4 +1,4 @@
-# dsh-llm-ctl — agent guide
+# @leaves615/dsh-llm-ctl — agent guide
 
 DSH plugin: per-provider admission queue + cooldown on `llm/stream`, bounded recovery on `agent/request-error`, model visibility switches in `settings.models` seats, DOM filtering of the model menu.
 

@@ -10,7 +10,7 @@
 > 若将来上游开放第三方能力声明接缝，重开时按 §5/§6 重做，但写入面必须只碰目标叶子路径。
 
 > 方法：只认一手来源。D = `/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/`（DSH 实现 checkout，只读），
-> W = 本仓库（`dsh-llm-ctl`），ZP = `dsh-opencode-zen-free-provider` 源码。
+> W = 本仓库（`@leaves615/dsh-llm-ctl`），ZP = `dsh-opencode-zen-free-provider` 源码。
 > 结论：选择器不是 UI 漏画，而是**按模型能力声明**渲染的；自定义模型缺的是 `reasoningEfforts` 声明。
 > ~~插件侧唯一官方正路是**帮用户把声明写进 `llm-pi-ai` 配置**~~（该路径已被上述决策否决）。
 

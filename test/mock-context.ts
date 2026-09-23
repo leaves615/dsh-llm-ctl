@@ -1,7 +1,7 @@
 /**
  * Minimal Cordis-shaped context for plugin wiring tests.
  *
- * Only the surface `dsh-llm-ctl` actually uses is implemented: listener
+ * Only the surface `@leaves615/dsh-llm-ctl` actually uses is implemented: listener
  * registration, logger, effect disposal, and service provision.
  *
  * @module dsh-llm-ctl/test/mock-context

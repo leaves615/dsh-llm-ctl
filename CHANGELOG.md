@@ -4,6 +4,12 @@
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)；版本号遵循
 [SemVer](https://semver.org/)。
 
+## [0.1.1] — 2026-09-23
+
+- 修 `publishConfig.provenance` 导致本地 `npm publish` 必挂（CI 仍经
+  `--provenance` 签名）。
+- 全仓 md 转中文；CI 支持 `v*` tag 自动发布 npm（OIDC 可信发布）。
+
 ## [0.1.0] — 2026-09-23
 
 首个公开发布：DSH web profile 的限流排队 + 模型隐藏。在

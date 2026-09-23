@@ -86,7 +86,7 @@ export interface RouteDeps {
   resetQueue: (input: { expectedRevision?: number }) => Promise<VisibilityWriteOutcome>;
   setVisibility: (input: { provider: string; model?: string; visible: boolean }) => Promise<VisibilityWriteOutcome>;
   resetVisibility: () => Promise<VisibilityWriteOutcome>;
-  discover: (input: { provider: string; baseURL?: string; api?: string; apiKey?: string }) => Promise<unknown>;
+  discover: (input: { provider: string; baseURL?: string; api?: string }) => Promise<unknown>;
 }
 
 /** Path of the polled state document. */
@@ -333,10 +333,17 @@ export function createRoutes(deps: RouteDeps): WebRoute[] {
             if (typeof value !== 'string') throw new Error(key + ' must be a string');
             return value;
           };
+          // Secrets never cross this channel: discovery reuses the stored
+          // credential server-side. An `apiKey` field in the body is rejected
+          // so a stray or malicious caller cannot smuggle one through logs.
+          if (record['apiKey'] !== undefined) {
+            writeJson(res, 400, { error: 'apiKey must not be sent; discovery uses the stored credential' });
+            return;
+          }
           writeJson(
             res,
             200,
-            await deps.discover({ provider, baseURL: optional('baseURL'), api: optional('api'), apiKey: optional('apiKey') }),
+            await deps.discover({ provider, baseURL: optional('baseURL'), api: optional('api') }),
           );
         } catch (error) {
           writeJson(res, 400, { error: error instanceof Error ? error.message : String(error) });

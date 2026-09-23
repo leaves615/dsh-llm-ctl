@@ -343,3 +343,25 @@ test('the discover route validates input and delegates to upstream discovery', a
   await route.handler({ method: 'GET' }, getRes);
   assert.equal(getRes.status, 405);
 });
+
+test('the discover route rejects an apiKey in the body', async () => {
+  const ctx = makeMockContext();
+  installWebServer(ctx);
+  ctx.services.set('llm', {
+    listProviders: () => [{ id: 'zen-free', name: 'Zen' }],
+    listModels: async () => [{ id: 'old-model', name: 'Old' }],
+    listConfigurableProviders: () => [{ provider: 'zen-free', displayName: 'Zen', settingsNs: 'zen-ns' }],
+    discoverModels: async () => [{ id: 'new-model', name: 'New' }],
+  });
+  apply(ctx as never, instantBackoff, { random: () => 0.5 });
+  const route = ctx.routes.find((entry) => entry.path === '/api/llm-ctl/discover');
+  assert.ok(route !== undefined);
+
+  const secretRes = makeResponse();
+  await route.handler(
+    { method: 'POST', [Symbol.asyncIterator]: async function* () { yield '{"provider":"zen-free","apiKey":"k"}'; } },
+    secretRes,
+  );
+  assert.equal(secretRes.status, 400);
+  assert.match(JSON.parse(secretRes.body as string).error as string, /stored credential/);
+});

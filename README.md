@@ -1,8 +1,52 @@
 # @leaves615/dsh-llm-ctl
 
-给 DSH 加个门卫：模型调用先排队再放行，模型菜单把不用的彻底藏掉。
+[![CI](https://github.com/leaves615/dsh-llm-ctl/actions/workflows/ci.yml/badge.svg)](https://github.com/leaves615/dsh-llm-ctl/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@leaves615/dsh-llm-ctl.svg)](https://www.npmjs.com/package/@leaves615/dsh-llm-ctl)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-跟另外两个插件的关系，先说清楚，免得装错：**dsh-llm-retry 是执行器**，在 durable 步骤边界上重跑失败的请求；**我是门卫**，请求发出去之前排队，触发限流后让整个 provider 歇一会儿。有它没它都能装——有它时失败恢复它说了算，我只排队和记冷却。**dsh-model-search-plugin 只做搜索不藏东西**；我只做隐藏，顺手补个搜索框，装了它我的搜索框自动让路。
+[English summary](#english-summary) · [中文文档](#工作原理) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+
+## English summary
+
+Admission control + model visibility for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) web profiles.
+
+- **Rate-limit queue.** Every `llm/stream` call — agent loop, title generation,
+  compaction alike — waits for a per-provider slot before dispatch. Strict
+  FIFO, per-provider concurrency caps, one wait budget (`maxWaitMs`). On a
+  terminal rate-limit failure the whole provider cools down (honors
+  `Retry-After` / `providerRetryAfterMs`, else local exponential backoff);
+  queued requests wait instead of dying with 429. Over budget →
+  `QUEUE_TIMEOUT`, queue full → `QUEUE_FULL`, each cancellable from the
+  composer queue pill.
+- **Standalone recovery.** On `agent/request-error` the plugin records the
+  cooldown, then yields to `dsh-llm-retry` when it handles the error — and
+  otherwise spends its own bounded budget (`reactiveRetry: auto`, cap 3) so
+  the first 429 no longer kills the turn on profiles without a retry plugin.
+- **Model visibility.** Two-level switches (whole provider / single model)
+  persisted to the `llm-ctl` settings section, `hiddenPatterns` presets,
+  settings-page cards + footer, model-menu filtering with a built-in search
+  box (`p:` prefix filters by provider), empty state with one-click restore,
+  and default-model fallback when the current default gets hidden.
+- **Upstream discovery.** Refresh button per provider card re-discovers the
+  upstream model list (adapter discovery with the stored server-side
+  credential, public Zen feed fallback for zen-family routes). Secrets never
+  cross the browser channel — `apiKey` in a discover request is rejected
+  (HTTP 400).
+
+Relation to sibling plugins: `dsh-llm-retry` is the executor (re-runs failed
+requests at durable step boundaries); this plugin is the gatekeeper (queues
+before dispatch, cools down after rate limits). `dsh-model-search-plugin`
+only searches; this plugin only hides — and yields its search box when the
+former is present.
+
+```sh
+dsh plugin --profile web add -w @leaves615/dsh-llm-ctl
+dsh web   # restart to load
+```
+
+Prerequisites: DSH web profile, Node.js >= 22. Tested against
+`@deepseek-ai/dsh-llm 0.1.2-rc.1`. Headless loads fine (queue + recovery
+active, menu/dock UI dormant without `webServer`).
 
 ## 工作原理
 
@@ -10,7 +54,7 @@
 
 插件卡在三个接缝上：
 
-| 接缝 | 干嘛 |
+| 接缝 | 职责 |
 |---|---|
 | `llm/stream`（全局 prepend） | 所有调用——agent 主循环、标题生成、压缩后台任务——按 provider 取到槽位才放行。排队时还没碰 provider，请求只读不改 |
 | `agent/request-error`（全局 prepend） | 先登记冷却，再问下游。有 retry 插件接管就透传，没人管就自己花有界预算重试 |
@@ -24,6 +68,12 @@ dsh web                                                   # 重启加载
 ```
 
 `dsh.bundle.patch` 和 `dsh.client` 都已声明，host 和浏览器两半自动装好，不用手改 `cordis.patch.yml`。
+
+### 前置条件
+
+- DSH（含 web profile），Node.js >= 22。
+- 在 `@deepseek-ai/dsh-llm 0.1.2-rc.1` 上测过；peer 依赖 `@deepseek-ai/cordis ^4.0.2`。
+- headless 也能加载：排队 + 自愈正常工作，只是没有状态条和菜单过滤（缺 `webServer` 时浏览器半休眠）。
 
 ## 安装之后
 
@@ -87,9 +137,22 @@ dsh web                                                   # 重启加载
 
 也不写自定义会话日志事件：`Session.append()` 给不了站外事件 `ignorable` 标记，硬写会让持久化读路径拒绝重建会话。可观测性只有 host 日志和 `llmCtl` Remote 暴露的内存环，等上游开放标记再说。
 
-## Compatibility
+## 常见问题
 
-web profile。`webServer` 和 `llm` 按可选对待，headless 也能加载（只是没状态条和菜单过滤）。在 `@deepseek-ai/dsh-llm 0.1.2-rc.1` 上测过，peer 要 `@deepseek-ai/cordis ^4.0.2`。
+**`QUEUE_FULL` / `QUEUE_TIMEOUT` 是什么意思？**
+`QUEUE_FULL` = 排队数超过 `maxQueueDepth`（默认 50），新请求直接拒绝，稍后再试或调大队列。`QUEUE_TIMEOUT` = 要等的时间超过 `maxWaitMs`（默认 120s）——已知等不起就立刻失败，不白等；调大 `maxWaitMs` 或降低并发需求可缓解。
+
+**排队能取消吗？**
+能。输入框上方的排队 pill 点开，每条请求可单独取消；取消记 `cancelled` 事件，立即释放槽位。
+
+**`SETTINGS_CONFLICT` 保存失败？**
+多人/多窗口同时改 `llm-ctl` 配置会撞 revision。刷新设置页重读最新 revision 再保存即可；插件内部写配置自带冲突重试。
+
+**卸载 / 回滚？**
+`dsh plugin --profile web remove @leaves615/dsh-llm-ctl` 后重启。`llm-ctl` settings section 残留的开关数据不影响其他插件，清理可手动删除该 section。
+
+**跟 `dsh-llm-retry` 一起装会打架吗？**
+不会。`agent/request-error` 上 retry 插件接管时本插件只透传（零重复计数）；只有下游无动作（void）时才花自己的有界预算。装/卸 retry 插件无需改本插件配置。
 
 ## 本地开发
 
@@ -102,7 +165,7 @@ npm run verify     # typecheck + build + tests + 真实 loader smoke boot
 
 测试直接跑 TS 源码（Node 类型剥离），所以 host 半没用装饰器语法，Typert `Remote` 标记是在 `src/controller.ts` 里编程式挂的。
 
-| 文件 | 干嘛的 |
+| 文件 | 职责 |
 |---|---|
 | `src/index.ts` | 入口：两个 waterfall listener、预算、remote controller |
 | `src/queue.ts` | per-provider 并发、FIFO、冷却时钟、ETA |
@@ -112,5 +175,9 @@ npm run verify     # typecheck + build + tests + 真实 loader smoke boot
 | `src/controller.ts` + `src/routes.ts` | `ctx.remote.llmCtl` 和 `/api/llm-ctl/*` |
 | `src/settings-ui.ts` | 设置页 provider 卡、footer、插件配置卡 |
 | `src/menu-filter.ts` | 模型菜单 DOM 过滤（选择器只留在这里） |
+| `src/menu-visibility.ts` | 外部搜索插件共存：探测到对方搜索框时只隐藏不重写 |
 | `src/queue-dock.ts` | 输入框上方的排队状态条 |
+| `src/visibility.ts` + `src/visibility-settings.ts` | 开关解析/过滤/回退 + settings section 适配层 |
+| `src/discover.ts` + `src/discover-ui.ts` | 上游模型发现（adapter 优先，zen feed 兜底）+ 发现列表视图 |
+| `src/concurrency.ts` + `src/events.ts` | 并发解析 + 有界内存控制面日志 |
 | `src/client-plugin.ts` | 浏览器半：状态条、菜单同步、HTTP 轮询 |

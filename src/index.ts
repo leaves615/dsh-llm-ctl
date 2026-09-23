@@ -451,7 +451,7 @@ export function apply(ctx: Context, config: ConfigInput = {}, internals: LlmCtlI
               },
             },
           },
-          { provider: input.provider, baseURL: input.baseURL, api: input.api, apiKey: input.apiKey, advertised },
+          { provider: input.provider, baseURL: input.baseURL, api: input.api, advertised },
         );
       },
     }).map((route) => server.register(route));

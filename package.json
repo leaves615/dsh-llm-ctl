@@ -59,6 +59,10 @@
     "harness"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "files": [
     "lib",
     "cordis.patch.yml",

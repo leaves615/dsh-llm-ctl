@@ -3,6 +3,7 @@ name: ci
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -22,3 +23,32 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
+
+  publish:
+    # 只在 v* tag 上发布：tag 必须和 package.json 的 version 一致（v0.1.0 → 0.1.0）。
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm OIDC 可信发布，不用配 NPM_TOKEN
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - name: tag 与 package.json 版本必须一致
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "tag v$TAG 与 package.json $PKG 不一致，拒绝发布" >&2
+            exit 1
+          fi
+      - run: npm run build
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

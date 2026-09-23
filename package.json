@@ -1,5 +1,5 @@
 {
-  "name": "dsh-llm-ctl",
+  "name": "@leaves615/dsh-llm-ctl",
   "version": "0.1.0",
   "description": "DSH plugin — rate-limit queuing, provider cooldown, and standalone request recovery on the llm/stream and agent/request-error seams",
   "author": "leaves chen <leaves615@gmail.com>",

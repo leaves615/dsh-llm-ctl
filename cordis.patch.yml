@@ -4,4 +4,4 @@
 # discovered by the package.json dsh.client declaration.
 - insert:
     - id: llm-ctl
-      name: 'dsh-llm-ctl'
+      name: '@leaves615/dsh-llm-ctl'

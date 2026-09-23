@@ -108,7 +108,7 @@ async function readZenFeed(
   fetchJson: (url: string, headers?: Record<string, string>, signal?: AbortSignal) => Promise<unknown>,
   signal: AbortSignal,
 ): Promise<DiscoveredModel[]> {
-  const payload = await fetchJson(ZEN_MODELS_URL, { 'User-Agent': 'dsh-llm-ctl', accept: 'application/json' }, signal);
+  const payload = await fetchJson(ZEN_MODELS_URL, { 'User-Agent': '@leaves615/dsh-llm-ctl', accept: 'application/json' }, signal);
   if (payload === null || typeof payload !== 'object') throw new Error('zen feed: unexpected response shape');
   const data = (payload as Record<string, unknown>)['data'];
   if (!Array.isArray(data)) throw new Error('zen feed: unexpected response shape');

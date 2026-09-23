@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const entry = join(root, 'src', 'client-plugin.ts');
 const targetPath = join(root, 'lib', 'client.js');
-const packageName = 'dsh-llm-ctl';
+const packageName = '@leaves615/dsh-llm-ctl';
 
 /** Modules the browser ModuleLoader already provides. */
 const EXTERNAL = [

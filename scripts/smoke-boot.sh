@@ -21,17 +21,23 @@ printf '[]\n' > "$profile/cordis.yml"
 # Symlink every package the source profile resolves; writing inside a symlinked
 # node_modules would escape the workspace, so the directory itself is real.
 for entry in "$source_profile"/node_modules/*; do
+  # Skip the pre-rename link: the scoped package below is the only mount.
+  if [ "$(basename "$entry")" = "dsh-llm-ctl" ]; then continue; fi
   ln -sfn "$entry" "$profile/node_modules/$(basename "$entry")"
 done
-ln -sfn "$root" "$profile/node_modules/dsh-llm-ctl"
+mkdir -p "$profile/node_modules/@leaves615"
+ln -sfn "$root" "$profile/node_modules/@leaves615/dsh-llm-ctl"
 
 node -e "
 const fs = require('fs');
 const path = '$profile/package.json';
 const manifest = JSON.parse(fs.readFileSync(path, 'utf8'));
 manifest.name = 'dsh-profile-ctl-test';
-manifest.dependencies = { ...manifest.dependencies, 'dsh-llm-ctl': 'file:$root' };
-if (!manifest.dsh.profile.bundles.includes('dsh-llm-ctl')) manifest.dsh.profile.bundles.push('dsh-llm-ctl');
+// Drop the pre-rename bundle id so only the scoped package mounts llm-ctl.
+delete manifest.dependencies['dsh-llm-ctl'];
+manifest.dependencies = { ...manifest.dependencies, '@leaves615/dsh-llm-ctl': 'file:$root' };
+manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter((entry) => entry !== 'dsh-llm-ctl');
+if (!manifest.dsh.profile.bundles.includes('@leaves615/dsh-llm-ctl')) manifest.dsh.profile.bundles.push('@leaves615/dsh-llm-ctl');
 fs.writeFileSync(path, JSON.stringify(manifest, null, 2));
 "
 
@@ -62,4 +68,4 @@ if ! grep -q 'dsh web: http' "$home/boot.log"; then
   tail -n 20 "$home/boot.log" >&2
   exit 1
 fi
-echo "smoke-boot: OK — loader composed and booted with dsh-llm-ctl mounted"
+echo "smoke-boot: OK — loader composed and booted with @leaves615/dsh-llm-ctl mounted"

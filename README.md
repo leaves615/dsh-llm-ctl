@@ -19,8 +19,8 @@
 ## 安装
 
 ```sh
-dsh plugin --profile web add -w dsh-llm-ctl   # 或：add -w /path/to/dsh-llm-ctl
-dsh web                                        # 重启加载
+dsh plugin --profile web add -w @leaves615/dsh-llm-ctl   # 或：add -w /path/to/dsh-llm-ctl
+dsh web                                                   # 重启加载
 ```
 
 `dsh.bundle.patch` 和 `dsh.client` 都已声明，host 和浏览器两半自动装好，不用手改 `cordis.patch.yml`。

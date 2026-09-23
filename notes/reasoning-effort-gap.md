@@ -1,9 +1,18 @@
 # 自定义 provider 模型缺思维等级选择：根因与补齐方案（研究）
 
+> ⚠️ **该功能已于 2026-09-22 彻底下架，本文只剩根因研究价值，§5 起的实现方案全部作废。**
+> 决策：本插件只写自己的 `llm-ctl` section，禁止写 `llm-pi-ai` 等别的插件的命名空间。
+> 而 §2/§3 证实能力声明只能落在 pi-ai 自己的 ns（派发期 `UNSUPPORTED_REASONING_EFFORT` 硬校验，绕不过），
+> 所以"补齐选择器"与"不写别人配置"不可兼得，按后者取舍：功能下架，根因留档。
+> 曾实现过一版（host 写路径 + `POST /api/llm-ctl/reasoning-efforts` + 插件配置卡内控制台），
+> 因两点被撤：① 把 `describe().value`（resolved 视图）整段回写 user 层，物化了继承、大 diff 改动原配置；
+> ② UI 未按 `settings.plugin.item` 规范落位（控制台渲染在 `<li>` 卡外、hook 条件调用、无暂存-保存）。
+> 若将来上游开放第三方能力声明接缝，重开时按 §5/§6 重做，但写入面必须只碰目标叶子路径。
+
 > 方法：只认一手来源。D = `/usr/local/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai/`（DSH 实现 checkout，只读），
 > W = 本仓库（`dsh-llm-ctl`），ZP = `dsh-opencode-zen-free-provider` 源码。
 > 结论：选择器不是 UI 漏画，而是**按模型能力声明**渲染的；自定义模型缺的是 `reasoningEfforts` 声明。
-> 插件侧唯一官方正路是**帮用户把声明写进 `llm-pi-ai` 配置**，而不是在 composer/菜单里外挂一个选择器。
+> ~~插件侧唯一官方正路是**帮用户把声明写进 `llm-pi-ai` 配置**~~（该路径已被上述决策否决）。
 
 ## 1. 现象（用户报告）
 

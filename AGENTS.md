@@ -32,6 +32,7 @@ Read the pointer target when the branch matches:
 - Waterfall order: `llm/stream` gates first; `agent/request-error` records cooldown, awaits `next()`, then spends its own budget only when downstream yields nothing.
 - Touch `llm/stream` payloads read-only; short-circuit with a `finish/error` chunk, never mutate options.
 - Write settings via `mutate` + `expectedRevision` on section `llm-ctl`; retry on `SETTINGS_CONFLICT`.
+- **Only ever write section `llm-ctl`.** Never mutate another plugin's namespace (`llm-pi-ai`, adapter sections, …) — no `describe()` snapshot of a foreign section may be written back, and no cross-ns `expectedRevision`. Read foreign sections is fine; writing them is out of scope permanently (decision 2026-09-22, see `notes/reasoning-effort-gap.md`).
 - Treat `webServer` and `llm` as optional: `inject` with fallback, `ctx.get` inside try/catch, headless stays loadable.
 - Register `settings.models.provider-card` once per `settingsNs`; resolve the row provider from owner props at render, not from the registration closure.
 - Keep client bundle pure: relative imports inline, `react`/`cordis`/slots packages external; assert `apply` shape in `scripts/build-client.mjs`.

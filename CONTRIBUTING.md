@@ -1,62 +1,57 @@
-# Contributing to @leaves615/dsh-llm-ctl
+# 参与贡献 @leaves615/dsh-llm-ctl
 
-Thanks for stopping by. This is a DSH (DeepSeek Harness) plugin, so a few
-things work differently from a plain npm library — read this first and you
-will save yourself a round-trip.
+欢迎。这里是 DSH（DeepSeek Harness）插件，有几处跟普通 npm 库不一样——先读完，能省一轮返工。
 
-## Prerequisites
+## 前置条件
 
-- Node.js >= 22 (CI runs 22.x and 24.x).
-- A working DSH checkout for the `smoke-boot` step: `scripts/smoke-boot.sh`
-  defaults to `~/.dsh/profiles/web` as the source profile. Without it,
-  `npm run verify` stops after `npm test` — that is expected, say so in
-  your PR.
-- `npm install` before anything else.
+- Node.js >= 22（CI 跑 22.x 和 24.x）。
+- `smoke-boot` 需要能用的 DSH 环境：`scripts/smoke-boot.sh` 默认用
+  `~/.dsh/profiles/web` 做源 profile。没有这个环境时，
+  `npm run verify` 跑到 `npm test` 为止是正常的——PR 里说明一下即可。
+- 先跑 `npm install`。
 
-## Commands
+## 命令
 
-| Command | What it does | When to run it |
+| 命令 | 作用 | 什么时候跑 |
 |---|---|---|
-| `npm run typecheck` | `tsc --noEmit`, fastest signal | First, always |
-| `npm run build` | host `tsc` + browser bundle via `scripts/build-client.mjs` | After touching `src/` |
-| `npm test` | `node --test test/*.test.ts` (runs TS directly, no build needed) | After touching `src/` or `test/` |
-| `npm run verify` | typecheck + build + test + real-loader `smoke-boot.sh` | Before opening a PR, must be green |
+| `npm run typecheck` | `tsc --noEmit`，最快的反馈 | 永远先跑它 |
+| `npm run build` | host 侧 `tsc` + `scripts/build-client.mjs` 打浏览器包 | 动过 `src/` 就跑 |
+| `npm test` | `node --test test/*.test.ts`（直接跑 TS，不用先构建） | 动过 `src/` 或 `test/` 就跑 |
+| `npm run verify` | typecheck + build + test + 真实 loader `smoke-boot.sh` | 开 PR 之前，必须全绿 |
 
-## Where things live
+## 文件地图
 
-`AGENTS.md` (repo root) is the source of truth for the module map and the
-hard rules. The short version:
+`AGENTS.md`（仓库根目录）是模块地图和硬规则的唯一正解。简版：
 
-- `src/index.ts` — host entry: `llm/stream` gate + `agent/request-error` recovery.
-- `src/queue.ts` / `delay.ts` / `reactive.ts` — gate, Retry-After/backoff, waitable codes.
-- `src/visibility*.ts` / `settings-ui.ts` — settings section `llm-ctl`, visibility rules, settings views.
-- `src/menu-filter.ts` / `menu-visibility.ts` — **the only DOM-hack zone**; keep every menu selector here.
-- `src/client-plugin.ts` — browser half (polls `/api/llm-ctl/*`, no `ctx.remote` — third-party Typert namespaces are unreachable from the browser).
-- `src/routes.ts` / `discover*.ts` — plain-HTTP channel on the optional `webServer` service.
-- `PRD.md` — behavior contract (FIFO, single `maxWaitMs`, `reactiveRetry` modes). Change behavior → update PRD in the same PR.
-- `notes/dsh-extension-points.md` — seam catalog with sources. New host waterfall or slot seat → check here first (official vs DOM-hack).
+- `src/index.ts` —— host 入口：`llm/stream` 门卫 + `agent/request-error` 自愈。
+- `src/queue.ts` / `delay.ts` / `reactive.ts` —— 门卫、Retry-After/退避、可等待失败码。
+- `src/visibility*.ts` / `settings-ui.ts` —— settings 分区 `llm-ctl`、隐藏规则、设置页视图。
+- `src/menu-filter.ts` / `menu-visibility.ts` —— **唯一的 DOM 操作区**；菜单选择器只许出现在这里。
+- `src/client-plugin.ts` —— 浏览器半（轮询 `/api/llm-ctl/*`，没有 `ctx.remote`——第三方 Typert 命名空间在浏览器侧不可达）。
+- `src/routes.ts` / `discover*.ts` —— 挂在可选 `webServer` 服务上的普通 HTTP 通道、上游模型发现。
+- `PRD.md` —— 行为契约（FIFO、单个 `maxWaitMs`、`reactiveRetry` 模式）。改行为必须同 PR 更新 PRD。
+- `notes/dsh-extension-points.md` —— 接缝目录（含出处）。新增 host waterfall 或 slot 座位先查这里（官方接缝还是 DOM 操作）。
 
-## Ground rules (enforced in review)
+## 硬规则（review 时执行）
 
-1. **Only ever write settings section `llm-ctl`.** Reading foreign sections is fine; writing `llm-pi-ai`, adapter sections, or anything outside `llm-ctl` is out of scope — permanently (decision 2026-09-22, see `notes/reasoning-effort-gap.md`).
-2. **`llm/stream` payloads are read-only.** Refuse admission with a `finish/error` chunk; never mutate options.
-3. **Waterfall order matters:** `llm/stream` gates first; `agent/request-error` records cooldown, awaits `next()`, then spends its own budget only when downstream yields nothing.
-4. **HTTP paths stay under `/api/llm-ctl/`.** State polls at 1s, catalog at 30s TTL.
-5. **Secrets never cross the browser channel.** `/api/llm-ctl/discover` rejects `apiKey` in the body; discovery reuses the stored credential server-side.
-6. **Keep the client bundle pure:** relative imports inline, `react`/`cordis`/slots packages external; `scripts/build-client.mjs` asserts the `apply` shape.
-7. **Tests run TS source directly** (Node type stripping), so the host half avoids decorator syntax — Typert `Remote` wiring is programmatic in `src/controller.ts`.
+1. **只写 `llm-ctl` 这一个 settings 分区。** 读别人的分区可以；写 `llm-pi-ai`、adapter 分区或任何 `llm-ctl` 之外的分区都出局——永久（2026-09-22 决策，见 `notes/reasoning-effort-gap.md`）。
+2. **`llm/stream` 的请求只读不改。** 拒绝放行时回一个 `finish/error` chunk；不许改 options。
+3. **waterfall 顺序不能反：** `llm/stream` 先排队；`agent/request-error` 先登记冷却、再等 `next()`，只有下游没动作时才花自己的预算。
+4. **HTTP 路径统一 `/api/llm-ctl/` 前缀。** 状态 1s 轮询，目录 30s TTL。
+5. **密钥不过浏览器通道。** `/api/llm-ctl/discover` 拒绝 body 里的 `apiKey`；发现上游模型只用服务端存好的 credential。
+6. **浏览器包保持纯净：** 相对导入打包内联，`react`/`cordis`/slots 包走外部；`scripts/build-client.mjs` 会断言 `apply` 形状。
+7. **测试直接跑 TS 源码**（Node 类型剥离），所以 host 半不用装饰器语法——Typert `Remote` 接线在 `src/controller.ts` 里手写。
 
-## Opening a PR
+## 开 PR
 
-- `npm run verify` green (or state which leg is missing and why).
-- Behavior change → PRD updated in the same PR.
-- New menu selector → lives in `menu-filter.ts`, with a `menu-visibility.test.ts` / `client-plugin.test.ts` case pinning it.
-- Keep the diff focused; one concern per PR.
+- `npm run verify` 全绿（缺哪条、为什么缺，写清楚）。
+- 行为变更 → 同 PR 更新 PRD。
+- 新增菜单选择器 → 必须落在 `menu-filter.ts`，并在 `menu-visibility.test.ts` / `client-plugin.test.ts` 里加用例钉住。
+- 一次 PR 只做一件事。
 
-## Reporting bugs
+## 报 bug
 
-Open an issue with: DSH version (`@deepseek-ai/dsh-llm` version), plugin version,
-profile (`web`? headless?), and the host log lines starting with `llm-ctl:`.
-For hangs, include the `/api/llm-ctl/state` snapshot. **Never paste API keys,
-tokens, or full `settings.yaml` contents** — redact secrets first (see
-`SECURITY.md`).
+开 issue 请带：DSH 版本（`@deepseek-ai/dsh-llm` 版本）、插件版本、
+profile（`web`？headless？）、host 日志里 `llm-ctl:` 开头的行。
+卡住不动的，附 `/api/llm-ctl/state` 快照。**不要贴 API key、
+token 或完整 `settings.yaml`**——先脱敏（见 `SECURITY.md`）。

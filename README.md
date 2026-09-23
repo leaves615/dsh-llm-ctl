@@ -4,49 +4,40 @@
 [![npm](https://img.shields.io/npm/v/@leaves615/dsh-llm-ctl.svg)](https://www.npmjs.com/package/@leaves615/dsh-llm-ctl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[English summary](#english-summary) · [中文文档](#工作原理) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[功能概览](#功能概览) · [工作原理](#工作原理) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
-## English summary
+## 功能概览
 
-Admission control + model visibility for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) web profiles.
+[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）
+web profile 的准入管制 + 模型隐藏。
 
-- **Rate-limit queue.** Every `llm/stream` call — agent loop, title generation,
-  compaction alike — waits for a per-provider slot before dispatch. Strict
-  FIFO, per-provider concurrency caps, one wait budget (`maxWaitMs`). On a
-  terminal rate-limit failure the whole provider cools down (honors
-  `Retry-After` / `providerRetryAfterMs`, else local exponential backoff);
-  queued requests wait instead of dying with 429. Over budget →
-  `QUEUE_TIMEOUT`, queue full → `QUEUE_FULL`, each cancellable from the
-  composer queue pill.
-- **Standalone recovery.** On `agent/request-error` the plugin records the
-  cooldown, then yields to `dsh-llm-retry` when it handles the error — and
-  otherwise spends its own bounded budget (`reactiveRetry: auto`, cap 3) so
-  the first 429 no longer kills the turn on profiles without a retry plugin.
-- **Model visibility.** Two-level switches (whole provider / single model)
-  persisted to the `llm-ctl` settings section, `hiddenPatterns` presets,
-  settings-page cards + footer, model-menu filtering with a built-in search
-  box (`p:` prefix filters by provider), empty state with one-click restore,
-  and default-model fallback when the current default gets hidden.
-- **Upstream discovery.** Refresh button per provider card re-discovers the
-  upstream model list (adapter discovery with the stored server-side
-  credential, public Zen feed fallback for zen-family routes). Secrets never
-  cross the browser channel — `apiKey` in a discover request is rejected
-  (HTTP 400).
+- **限流排队。** 所有 `llm/stream` 调用——agent 主循环、标题生成、压缩后台任务——
+  先拿 per-provider 槽位再放行。严格 FIFO，per-provider 并发上限，单个等待预算
+  （`maxWaitMs`）。终端限流失败后整个 provider 冷却（优先 `Retry-After` /
+  `providerRetryAfterMs`，没有就本地指数退避）；排队的请求等着而不是 429 炸掉。
+  超预算 → `QUEUE_TIMEOUT`，队满 → `QUEUE_FULL`，输入框排队 pill 里每条可单独取消。
+- **独立自愈。** `agent/request-error` 上先登记冷却，再问下游：`dsh-llm-retry`
+  接管就透传，没人管就花自己的有界预算（`reactiveRetry: auto`，默认 3 次）——
+  没装 retry 插件的 profile 第一个 429 也不炸轮。
+- **模型隐藏。** provider / 单模型两级开关，持久化到 `llm-ctl` settings 分区；
+  `hiddenPatterns` 预置；设置页卡片 + 页脚；模型菜单过滤 + 自带搜索框
+  （`p:` 前缀按 provider 过滤）；全隐空态一键恢复；默认模型被藏后自动回退。
+- **上游发现。** 每张 provider 卡上的刷新按钮重发现上游模型清单（先走 adapter
+  发现，服务端用存好的 credential；zen 系失败时回退公开 Zen feed）。
+  密钥不过浏览器通道——discover 请求里带 `apiKey` 直接 HTTP 400。
 
-Relation to sibling plugins: `dsh-llm-retry` is the executor (re-runs failed
-requests at durable step boundaries); this plugin is the gatekeeper (queues
-before dispatch, cools down after rate limits). `dsh-model-search-plugin`
-only searches; this plugin only hides — and yields its search box when the
-former is present.
+跟另外两个插件的关系：`dsh-llm-retry` 是执行器（在 durable 步骤边界重跑失败请求）；
+本插件是门卫（发出去之前排队，限流后让整个 provider 歇会儿）。
+`dsh-model-search-plugin` 只搜索不隐藏；本插件只隐藏——对方在场时搜索框自动让路。
 
 ```sh
 dsh plugin --profile web add -w @leaves615/dsh-llm-ctl
-dsh web   # restart to load
+dsh web   # 重启加载
 ```
 
-Prerequisites: DSH web profile, Node.js >= 22. Tested against
-`@deepseek-ai/dsh-llm 0.1.2-rc.1`. Headless loads fine (queue + recovery
-active, menu/dock UI dormant without `webServer`).
+前置条件：DSH web profile，Node.js >= 22。在
+`@deepseek-ai/dsh-llm 0.1.2-rc.1` 上测过。headless 也能加载
+（排队 + 自愈正常工作，缺 `webServer` 时菜单/dock UI 休眠）。
 
 ## 工作原理
 

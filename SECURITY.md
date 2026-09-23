@@ -1,43 +1,38 @@
-# Security Policy
+# 安全政策
 
-## Supported versions
+## 支持的版本
 
-| Version | Supported |
+| 版本 | 是否支持 |
 |---|---|
-| 0.1.x (latest `main`) | ✅ |
-| < 0.1.0 | ❌ (pre-release, upgrade) |
+| 0.1.x（`main` 最新） | ✅ |
+| < 0.1.0 | ❌（预发布版本，请升级） |
 
-## Report a vulnerability
+## 报告漏洞
 
-**Do not open a public issue for a suspected vulnerability.**
-Email `leaves615@gmail.com` with:
+**疑似漏洞不要开公开 issue。**
+发邮件到 `leaves615@gmail.com`，写清：
 
-- plugin version and DSH version,
-- what you did, what you expected, what happened,
-- host log excerpt (`llm-ctl:` lines) with secrets redacted.
+- 插件版本和 DSH 版本、
+- 你做了什么、期望什么、实际发生什么、
+- host 日志片段（`llm-ctl:` 开头的行），密钥先脱敏。
 
-I will acknowledge within 72 hours, fix on `main`, and credit you in the
-release notes unless you prefer otherwise.
+72 小时内回复，在 `main` 上修复；release notes 里致谢（不想具名请说明）。
 
-## What this plugin does with secrets
+## 本插件如何处理密钥
 
-- **It never asks for your keys.** Provider credentials live in DSH's own
-  settings store; the plugin reads them server-side through `ctx.llm` and
-  never handles them directly.
-- **The browser channel carries no secrets.** `POST /api/llm-ctl/discover`
-  accepts only `{ provider, baseURL?, api? }` and returns HTTP 400 when the
-  body contains `apiKey`. Upstream discovery reuses the stored credential
-  on the host.
-- **Logs are secret-free by construction.** Host log lines (`llm-ctl:` prefix)
-  record provider ids, failure codes, delays, and counts — never request
-  bodies, headers, or credentials.
+- **从不问你要密钥。** provider 的 credential 存在 DSH 自己的 settings 里；插件只在服务端经 `ctx.llm` 使用，从不直接经手。
+- **浏览器通道不传密钥。** `POST /api/llm-ctl/discover` 只收
+  `{ provider, baseURL?, api? }`，body 里带 `apiKey` 直接 HTTP 400。
+  上游发现只用服务端存好的 credential。
+- **日志构造上就不含密钥。** host 日志（`llm-ctl:` 前缀）只记 provider 名、
+  失败码、延迟、计数——不记请求体、请求头、credential。
 
-## Scope notes for auditors
+## 给审计者的范围说明
 
-- All browser traffic stays under `/api/llm-ctl/*` on the local `webServer`;
-  every POST body is bounded (4 KiB) and type-checked before use.
-- The plugin writes **only** its own settings section (`llm-ctl`, user layer).
-  It never mutates another plugin's namespace (`llm-pi-ai`, adapter sections).
-- The model-menu filter is DOM-based (`display:none` on menu rows, selectors
-  confined to `src/menu-filter.ts`); it cannot read page content outside the
-  model picker and performs no network I/O of its own.
+- 浏览器流量全部走本地 `webServer` 的 `/api/llm-ctl/*`；每个 POST body
+  限 4 KiB，先校验类型再用。
+- 插件只写自己的 settings 分区（user 层的 `llm-ctl`）。
+  从不改别人的命名空间（`llm-pi-ai`、adapter 分区）。
+- 模型菜单过滤是 DOM 操作（给菜单行加 `display:none`，
+  选择器收敛在 `src/menu-filter.ts`）；读不到 picker 之外的页面内容，
+  自己也不发网络请求。
